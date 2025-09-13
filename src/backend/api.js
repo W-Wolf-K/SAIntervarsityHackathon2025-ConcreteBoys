@@ -129,6 +129,28 @@ async function loginUser(username, password) {
     }
 }
 
+async function getUserEvents(username) {
+    const db = await connectDB();
+    try {
+        const collection = db.collection(userCol);
+
+        // Find the user
+        const user = await collection.findOne({ username });
+        if (!user) {
+            console.error("User does not exist");
+            return null;
+        }
+
+        const events = user.events ?? [];
+        console.log(`Events for ${username}:`, events);
+        return events;
+    } catch (err) {
+        console.error("Failed to get user events:", err);
+        return null;
+    } finally {
+        await closeDB();
+    }
+}
 
 //User: Update User Profile
 //Email
@@ -370,7 +392,21 @@ async function getUserDetails(username) {
     }
 }
 
-//events
+//Events
+async function isEventNameUnique(eventName) {
+    const db = await connectDB();
+    try {
+        const events = db.collection(eventCol);
+        const existing = await events.findOne({ name: eventName });
+        return !existing;
+    } catch (err) {
+        console.error("Failed to check event name:", err);
+        return false;
+    } finally {
+        await closeDB();
+    }
+}
+
 async function createEvent(username, eventName, budget = 0, date = null) {
     if (!eventName || typeof eventName !== "string" || eventName.trim().length < 3) {
         console.error("Event name must be at least 3 characters long");
@@ -381,7 +417,10 @@ async function createEvent(username, eventName, budget = 0, date = null) {
         console.error("Budget must be a non-negative number");
         return null;
     }
-
+    if(!(await isEventNameUnique(eventName))){
+        console.log("Name has already been used, must be unique");
+        return null;
+    }
     const db = await connectDB();
     try {
         const users = db.collection(userCol);
@@ -437,7 +476,101 @@ async function createEvent(username, eventName, budget = 0, date = null) {
     }
 }
 
+async function addUserToEvent(eventId, eventName, username) {
+    if (!eventId && !eventName) {
+        console.error("Provide either eventId or eventName");
+        return null;
+    }
+
+    const db = await connectDB();
+    try {
+        const users = db.collection(userCol);
+        const events = db.collection(eventCol);
+
+        const user = await users.findOne({ username });
+        if (!user) return null;
+
+        const e = eventId ? { eventId } : { name: eventName };
+        const event = await events.findOne(e);
+        if (!event) return null;
+
+        const alreadyParticipant = event.participants.some(p => p.username === username);
+        if (alreadyParticipant) return event;
+
+        const eventUpdate = await events.updateOne(
+            { eventId: event.eventId },
+            { $push: { participants: { username, contribution: 0, willingness: 0 } } }
+        );
+
+        if (eventUpdate.modifiedCount === 0) return null;
+
+        if (!user.events.includes(event.eventId)) {
+            await users.updateOne(
+                { username },
+                { $push: { events: event.eventId } }
+            );
+        }
+
+        return await events.findOne({ eventId: event.eventId });
+    } catch (err) {
+        console.error("Failed to add user to event:", err);
+        return null;
+    } finally {
+        await closeDB();
+    }
+}
+
+async function getEventDetails(eventName) {
+    const db = await connectDB();
+    try {
+        const events = db.collection(eventCol);
+
+        const event = await events.findOne({ name: eventName });
+        if (!event) {
+            console.error("Event does not exist");
+            return null;
+        }
+
+        console.log("Event details:", event);
+        return event;
+    } catch (err) {
+        console.error("Failed to get event details:", err);
+        return null;
+    } finally {
+        await closeDB();
+    }
+}
+
+async function getEventParticipants(eventName) {
+    const db = await connectDB();
+    try {
+        const collection = db.collection(eventCol);
+
+        // Find the event
+        const event = await collection.findOne({ name: eventName });
+        if (!event) {
+            console.error("Event does not exist");
+            return null;
+        }
+
+        const participants = event.participants ?? [];
+        console.log(`Participants for event "${eventName}":`, participants);
+        return participants;
+    } catch (err) {
+        console.error("Failed to get event participants:", err);
+        return null;
+    } finally {
+        await closeDB();
+    }
+}
+
+
 // (async () => {signIn("mariadb@db.com","maria","1@mMaria")})()
-(async () => {
-    await createEvent("maria", "Dinner", 269);
-})();
+// (async () => {signIn("jack@db.com","jack","1@mJACK")})()
+
+// (async () => {
+//     await createEvent("maria", "Dinner", 269);
+// })();
+
+// (async() => addUserToEvent("Vee121","maria","jack"))()
+(async => getEventParticipants("Dinner"))()
