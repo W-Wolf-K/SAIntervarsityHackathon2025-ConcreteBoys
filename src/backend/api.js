@@ -595,4 +595,327 @@ async function getEventParticipants(eventName) {
     }
 }
 
-(async => getEventParticipants("Dinner"))()
+// (async => getEventParticipants("Dinner"))()
+
+async function addContribution(username, eventId, amount) {
+    if (typeof amount !== 'number' || amount < 0) {
+        console.error("Amount to contribute must be a non-negative number");
+        return null;
+    }
+    const db = await connectDB();
+    try {
+        const collection = db.collection(eventCol);
+        // find participant for event 
+        const existingEvent = await collection.findOne({
+            eventId,
+            "participants.username": username
+        });
+
+        if (!existingEvent) {
+            console.error("This eventId does not exist or user is not participant");
+            return null;
+        }
+
+        //extract participant's current contribution
+        const participant = existingEvent.participants.find(p=> p.username ===username);
+        const currentAmount = participant?.contribution || 0;
+
+        const newAmount = currentAmount + amount;
+
+        // Update contribution amount
+        const result = await collection.updateOne(
+            { eventId: eventId, "participants.username": username }, // filter
+            { $set: { "participants.$.contribution": newAmount } } // Update inside array
+        );
+
+        if (result.modifiedCount > 0) {
+            console.log(`Contribution was successfully added by ${username}. New total: ${newAmount}`);
+        } else {
+            console.warn(`No contribution update was made for ${username}.`);
+        }
+        return result.modifiedCount;
+    } catch (err) {
+        console.error("Failed to add contribution: ", err);
+        return null;
+    } finally {
+        await closeDB();
+    }
+}
+
+async function search(type, searchParams) { // let the search on each page use different search functions
+    switch (type) {
+        case "user":
+            return handleUserSearch(searchParams);
+        case "event":
+            return handleEventSearch(searchParams);
+        default:
+            console.error('Search type must be either "user" or "event" ')
+            return null;
+    }
+}
+
+async function handleUserSearch(text) {
+    const db = await connectDB()
+    try {
+        const collection = db.collection(userCol);
+
+        if (text.length === 0 || text.trim().length === 0) {
+            return collection.find({}).toArray();
+        }
+
+        const searchRegex = new RegExp(text, 'i');
+
+        // $or used to search across multiple fields
+
+        return collection.find({
+            $or: [
+                { userId: { $regex: searchRegex } },
+                { username: { $regex: searchRegex } },
+                { events: {
+                    $elemMatch: { $regex: searchRegex }
+                }},
+                { groups: {
+                        $elemMatch: { $regex: searchRegex }
+                    }},
+            ]
+        }).toArray();
+    } catch (err) {
+        console.error("Failed to perform search", err);
+        return null;
+    } finally {
+        // await closeDB(); // closing straight after causes problems
+    }
+}
+
+async function handleEventSearch(text) {
+    const db = await connectDB()
+    try{
+        const collection = db.collection(eventCol);
+
+        if (text.length === 0 || text.trim().length === 0) {
+            return collection.find({}).toArray();
+        }
+
+        const searchRegex = new RegExp(text, 'i');
+
+        // $or used to search across multiple fields
+
+        return collection.find({
+            $or: [
+                {eventId: {$regex: searchRegex}},
+                {name: {$regex: searchRegex}},
+                {participants: {
+                    $elemMatch:{
+                        username: { $regex: searchRegex }
+                    }
+                }},
+                {createdBy: {$regex: searchRegex}},
+            ]
+        }).toArray();
+    }catch(err){
+        console.error("Failed to perform search", err);
+        return null;
+    }finally{
+        // await closeDB(); // closing straight after causes problems
+    }
+}
+
+// handleUserSearch("a").then(results=>console.log(results));
+
+async function requestSubsidy(username, eventId){
+    // works on assumption that the element of the participant object array has a "requestedSubsidy" key set to true or false.
+
+    const db = await connectDB();
+    try {
+        const collection = db.collection(eventCol);
+        // find participant for event 
+        const existingEvent = await collection.findOne({
+            eventId,
+            "participants.username": username
+        });
+
+        if (!existingEvent) {
+            console.error("This eventId does not exist or user is not participant");
+            return null;
+        }
+
+        // Update requestedSubsidy status
+        const result = await collection.updateOne(
+            { eventId: eventId, "participants.username": username }, // filter
+            { $set: { "participants.$.requestedSubsidy": true} } // Update inside array
+        );
+
+        console.log(`Subsidy was successfully requested for ${username}`);
+        return result.modifiedCount;
+    } catch (err) {
+        console.error("Failed to make subsidy request: ", err);
+        return null;
+    }finally{
+        await closeDB();
+    }
+
+}
+
+async function contributeToSubsidy(username, eventId, amount){
+    if (typeof amount !== 'number' || amount < 0) {
+        console.error("Amount to contribute towards subsidy must be a non-negative number");
+        return null;
+    }
+    console.log(`${username} will attempt to contribute to event ${eventId} subsidy`);
+    addContribution(username, eventId, amount)
+}
+
+async function updateEvent(username, eventId ,updates){ // receive an updates object with only required fields set
+    // validate newName, newBudget, newDate, newParticipants to build an object with only non-null values
+    const updateFields = {};
+    if (updates.name != null) updateFields.name = updates.name;
+    if (updates.budget != null) updateFields.budget = updates.budget;
+    if (updates.date != null) updateFields.date = updates.date;
+    if (updates.participants != null) updateFields.participants = updates.participants;
+
+    if(Object.keys(updateFields).length === 0){
+        console.error("There were no updates to be made");
+        return null;
+    }
+
+    const db = await connectDB();
+
+    try{
+        const collection = db.collection(eventCol);
+
+        // find specific event
+        const existingEvent = await collection.findOne({eventId,
+            createdBy: username
+        });
+
+        if (!existingEvent) {
+            console.error("There's no such eventId is tied to this user");
+            return null;
+        }
+
+        // Update matching document
+        const result =  await collection.updateOne(
+            {eventId: eventId, createdBy: username}, // filter
+            {$set: updateFields}
+        );
+
+        console.log("Event updates were made successfully");
+        return result.modifiedCount;
+    }catch(err){
+        console.error("Failed to make an update to the event: ", err);
+        return null;
+    }finally{
+        await closeDB();
+    }
+}
+
+async function deleteEvent(username, eventId) {
+    const db = await connectDB();
+
+    try {
+        const collection = db.collection(eventCol);
+        // validate user and event
+        const existingEvent = await collection.findOne({eventId, createdBy:username});
+        if (!existingEvent) {
+            console.error("This eventId does not exist for this user");
+            return null;
+        }
+
+        // delete event
+        const result = await collection.deleteOne({eventId, createdBy: username});
+        console.log(`Event ${eventId} was successfully deleted`)
+        return result.deletedCount;
+    } catch (error) {
+        console.error("Failed to delete the event: ", error);
+        return null;
+    }finally{
+        await closeDB();
+    }
+}
+
+async function listUpcomingEvents(username){
+    const db = await connectDB()
+    try {
+        const collection = db.collection(eventCol);
+        const currentDate = new Date();
+
+        const upcomingEvents = await collection.find({
+            "participants.username": username, 
+            date: {
+                $gte: ISODate(isoDateString),
+            }
+        }).tpArray();
+
+        if (upcomingEvents.length === 0) {
+            console.error(`There are no upcoming events for ${username}`)
+           return []; 
+        } 
+
+        console.log(`${upcomingEvents.length} events are upcoming for ${username}`)
+        return upcomingEvents;
+    } catch (err) {
+        console.error("Failed to get list of upcoming events", err);
+        return null;
+    } finally {
+        await closeDB();
+    }
+}
+
+async function getEventSummary(username, eventId) {
+    const db = await connectDB();
+    try {
+        const collection = db.collection(eventCol);
+
+        // find specific event
+        const existingEvent = await collection.findOne({
+            eventId,
+            createdBy: username
+        });
+
+        if (!existingEvent) {
+            console.error(`Event ${eventId} not found or not created by ${username}`);
+            return null;
+        }
+
+        console.log("Event summary generated successfully");
+        return existingEvent;
+    } catch (err) {
+        console.error("Failed to generate event summary: ", err);
+        return null;
+    } finally {
+        await closeDB();
+    }
+}
+
+async function commentOnEvent(username, eventId, message) {
+    const db = await connectDB();
+
+    try {
+        const collection = db.collection(eventCol);
+
+        // find specific event
+        const existingEvent = await collection.findOne({
+            eventId, 
+            "participants.username": username
+        });
+
+        if (!existingEvent) {
+            console.error("There's no such event id associated with this participant");
+            return null;
+        }
+
+        // Update matching document
+        const result = await collection.updateOne(
+            { eventId: eventId, "participants.username": username }, // filter
+            { $set: { "participants.$.comment": message } }
+        );
+
+        console.log(`${username}'s comment on the event ${eventId} was saved successfully`);
+        return result.modifiedCount;
+    } catch (err) {
+        console.error("Failed to make a comment on the event: ", err);
+        return null;
+    } finally {
+        await closeDB();
+    }
+}
