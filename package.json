@@ -1,7 +1,8 @@
 {
   "dependencies": {
     "dotenv": "^17.2.2",
-    "mongodb": "6.19",
+    "envloader": "^0.0.3",
+    "mongodb": "^6.19.0",
     "mongoose": "^8.18.1"
   }
 }
