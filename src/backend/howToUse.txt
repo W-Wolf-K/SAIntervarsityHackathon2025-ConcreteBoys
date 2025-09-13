@@ -1,0 +1,123 @@
+InterVarsity Hackathon 2025 - API Quick Reference
+
+==============================
+USER FUNCTIONS
+==============================
+
+signIn(email, username, password)
+  - Parameters: string, string, string
+  - Returns: Inserted user ID or null
+  - Example: await signIn("test@example.com","testUser","Abc123");
+
+loginUser(username, password)
+  - Parameters: string, string
+  - Returns: User object or null
+  - Example: await loginUser("testUser","Abc123");
+
+updateEmail(currentUsername, newEmail)
+  - Parameters: string, string
+  - Returns: Modified count or null
+  - Example: await updateEmail("testUser","new@example.com");
+
+updateUsername(currentUsername, newUsername)
+  - Parameters: string, string
+  - Returns: Modified count or null
+  - Example: await updateUsername("testUser","newUser");
+
+updatePassword(username, newPassword)
+  - Parameters: string, string
+  - Returns: Modified count or null
+  - Example: await updatePassword("testUser","NewPass123");
+
+deleteAccount(username, password)
+  - Parameters: string, string
+  - Returns: Deleted count or null
+  - Example: await deleteAccount("testUser","Abc123");
+
+getUserOverallBudget(username)
+  - Parameters: string
+  - Returns: Number (budget) or null
+  - Example: await getUserOverallBudget("testUser");
+
+setOverallBudget(username, budget)
+  - Parameters: string, number
+  - Returns: Modified count or null
+  - Example: await setOverallBudget("testUser",5000);
+
+updateOverallBudget(username, newBudget)
+  - Parameters: string, number
+  - Returns: Modified count or null
+  - Example: await updateOverallBudget("testUser",6000);
+
+getUserDetails(username)
+  - Parameters: string
+  - Returns: User object (no password) or null
+  - Example: await getUserDetails("testUser");
+
+getUserEvents(username)
+  - Parameters: string
+  - Returns: Array of event IDs or null
+  - Example: await getUserEvents("testUser");
+
+==============================
+EVENT FUNCTIONS
+==============================
+
+createEvent(username, eventName, budget = 0, date = null)
+  - Parameters: string, string, number, string
+  - Returns: Event object or null
+  - Example: await createEvent("testUser","Fundraiser",1000,"2025-09-15");
+
+addUserToEvent(eventName, username)
+  - Parameters: string, string
+  - Returns: Updated event object or null
+  - Example: await addUserToEvent("Fundraiser","anotherUser");
+
+removeUserFromEvent(eventName, username)
+  - Parameters: string, string
+  - Returns: Updated event object or null
+  - Example: await removeUserFromEvent("Fundraiser","anotherUser");
+
+getEventDetails(eventName)
+  - Parameters: string
+  - Returns: Event object or null
+  - Example: await getEventDetails("Fundraiser");
+
+getEventParticipants(eventName)
+  - Parameters: string
+  - Returns: Array of participant objects or null
+  - Example: await getEventParticipants("Fundraiser");
+
+==============================
+HELPER FUNCTIONS
+==============================
+
+generateId()
+  - Parameters: None
+  - Returns: Random 3-letter + 3-digit ID
+  - Example: generateId(); // e.g., "AbC123"
+
+isValidEmailFormat(email)
+  - Parameters: string
+  - Returns: true / false
+  - Example: isValidEmailFormat("test@example.com");
+
+isValidUsernameFormat(username)
+  - Parameters: string
+  - Returns: true / false
+  - Example: isValidUsernameFormat("user123");
+
+isValidPassword(password)
+  - Parameters: string
+  - Returns: true / false
+  - Example: isValidPassword("Abc123");
+
+==============================
+NOTES
+==============================
+
+- All async functions use MongoDB connection automatically.
+- Return null indicates failure or non-existent user/event.
+- Passwords are stored as plain text; hashing is recommended for production.
+- Events are linked to users through the 'events' array in user objects.
+- Participants are stored inside the event document under 'participants'.
