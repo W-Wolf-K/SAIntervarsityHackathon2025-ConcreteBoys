@@ -1,6 +1,6 @@
 const { connectDB, closeDB } = require('./database');
 let userCol = 'users';
-
+let eventCol = 'events';
 // Helper functions
 function generateId() {
     const letters = 'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz';
@@ -343,6 +343,7 @@ async function updateOverallBudget(username, newBudget) {
         await closeDB();
     }
 }
+
 //getAllDetails
 async function getUserDetails(username) {
     const db = await connectDB();
@@ -369,26 +370,74 @@ async function getUserDetails(username) {
     }
 }
 
+//events
+async function createEvent(username, eventName, budget = 0, date = null) {
+    if (!eventName || typeof eventName !== "string" || eventName.trim().length < 3) {
+        console.error("Event name must be at least 3 characters long");
+        return null;
+    }
 
+    if (typeof budget !== "number" || budget < 0) {
+        console.error("Budget must be a non-negative number");
+        return null;
+    }
 
-// how to use
-// (async () => {
-//     await signIn("testemail@gmail.com", "testPerson", "Abc123");
-// })();
-// (async () => {
-//     const a = await loginUser("tPerson", "aBc123"); // strings in quotes
-//     if (a) {
-//         console.log("Logged in:", a.username);
-//     } else {
-//         console.log("Login failed");
-//     }
-// })();
+    const db = await connectDB();
+    try {
+        const users = db.collection(userCol);
+        const events = db.collection(eventCol);
 
-// (async () =>{
-//     updatePassword("tPerson","aBc123");
-// })()
+        const user = await users.findOne({ username });
+        if (!user) {
+            console.error("User does not exist");
+            return null;
+        }
 
-// (async=>signIn("c@fnb.com","betterOffAlone","123!@#Password"))()
-// (async=>deleteAccount("betterOffAlone","123!@#Password"))()
+        const eventId = generateId();
+        const newEvent = {
+            eventId,
+            name: eventName,
+            budget,
+            date: date ? new Date(date) : null,
+            participants: [
+                {
+                    username,
+                    contribution: 0,
+                    willingness: 0
+                }
+            ],
+            createdBy: username,
+            createdAt: new Date()
+        };
 
-console.log(getAllDetails("betterOffAlone"))
+        const result = await events.insertOne(newEvent);
+
+        if (!result.insertedId) {
+            console.error("Failed to insert event");
+            return null;
+        }
+
+        const updateResult = await users.updateOne(
+            { username },
+            { $push: { events: eventId } }
+        );
+
+        if (updateResult.modifiedCount === 0) {
+            console.warn("Event created but could not update user's events array");
+        } else {
+            console.log(`Event '${eventName}' created and linked to ${username}`);
+        }
+
+        return newEvent;
+    } catch (err) {
+        console.error("Create event failed:", err);
+        return null;
+    } finally {
+        await closeDB();
+    }
+}
+
+// (async () => {signIn("mariadb@db.com","maria","1@mMaria")})()
+(async () => {
+    await createEvent("maria", "Dinner", 269);
+})();
