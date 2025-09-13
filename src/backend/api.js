@@ -69,7 +69,8 @@ async function signIn(email, username, password) {
             password: password,
             groups: [],
             events: [],
-            totalSpent: 0
+            totalSpent: 0,
+            overallBudget: 0 // balance
         };
 
         const result = await db.collection(userCol).insertOne(data);
@@ -108,7 +109,8 @@ async function loginUser(username, password) {
     }
 }
 
-//Update User Profile
+
+//User: Update User Profile
 //Email
 async function updateEmail(currentUsername, newEmail) {
     if (!isValidEmailFormat(newEmail)) {
@@ -141,7 +143,7 @@ async function updateEmail(currentUsername, newEmail) {
         await closeDB();
     }
 }
-
+//users
 async function updateUsername(currentUsername, newUsername) {
     if (!isValidUsernameFormat(newUsername)) {
         console.error("Username must be at least 3 characters");
@@ -173,7 +175,7 @@ async function updateUsername(currentUsername, newUsername) {
         await closeDB();
     }
 }
-
+//password
 async function updatePassword(username, newPassword) {
     if (!isValidPassword(newPassword)) {
         console.error("Password must be at least 6 characters, contain uppercase/lowercase letters and a number");
@@ -195,6 +197,97 @@ async function updatePassword(username, newPassword) {
         return result.modifiedCount;
     } catch (err) {
         console.error("Update password failed:", err);
+        return null;
+    } finally {
+        await closeDB();
+    }
+}
+
+//User: Budget (personalised)
+async function getOverallBudget(username) {
+    const db = await connectDB(); 
+    try {
+        const collection = db.collection(userCol);
+
+        // Find the user
+        const existing = await collection.findOne({ username: username });
+        if (!existing) {
+            console.error("User does not exist");
+            return null;
+        }
+
+        const budget = existing.overallBudget ?? 0; // fallback to 0 if not set
+        console.log(`Budget for ${username}:`, budget);
+        return budget;
+    } catch (err) {
+        console.error("Failed to get budget:", err);
+        return null;
+    } finally {
+        await closeDB();
+    }
+}
+
+async function setOverallBudget(username, budget) {
+    if (typeof budget !== 'number' || budget < 0) {
+        console.error("Budget must be a non-negative number");
+        return null;
+    }
+
+    const db = await connectDB();
+    try {
+        const collection = db.collection(userCol);
+
+        // Check if user exists
+        const existing = await collection.findOne({ username });
+        if (!existing) {
+            console.error("User does not exist");
+            return null;
+        }
+
+        // Update the overallBudget
+        const result = await collection.updateOne(
+            { username },
+            { $set: { overallBudget: budget } }
+        );
+
+        console.log(`Updated budget for ${username}: ${budget}`);
+        return result.modifiedCount;
+    } catch (err) {
+        console.error("Failed to set budget:", err);
+        return null;
+    } finally {
+        await closeDB();
+    }
+}
+
+async function updateOverallBudget(username, newBudget) {
+    // Validate newBudget
+    if (typeof newBudget !== 'number' || newBudget < 0) {
+        console.error("New budget must be a non-negative number");
+        return null;
+    }
+
+    const db = await connectDB();
+    try {
+        const collection = db.collection(userCol);
+
+        // Check if user exists
+        const existing = await collection.findOne({ username });
+        if (!existing) {
+            console.error("User does not exist");
+            return null;
+        }
+
+        // Update the overallBudget
+        const result = await collection.updateOne(
+            { username },
+            { $set: { overallBudget: newBudget } }
+        );
+
+        console.log(`Updated overallBudget for ${username} to ${newBudget}`);
+        return result.modifiedCount;
+    } catch (err) {
+        console.error("Failed to update budget:", err);
         return null;
     } finally {
         await closeDB();
