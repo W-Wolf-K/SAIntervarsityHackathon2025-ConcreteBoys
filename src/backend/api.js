@@ -476,11 +476,8 @@ async function createEvent(username, eventName, budget = 0, date = null) {
     }
 }
 
-async function addUserToEvent(eventId, eventName, username) {
-    if (!eventId && !eventName) {
-        console.error("Provide either eventId or eventName");
-        return null;
-    }
+async function addUserToEvent(eventName, username) {
+    if (!eventName) return null;
 
     const db = await connectDB();
     try {
@@ -490,30 +487,64 @@ async function addUserToEvent(eventId, eventName, username) {
         const user = await users.findOne({ username });
         if (!user) return null;
 
-        const e = eventId ? { eventId } : { name: eventName };
-        const event = await events.findOne(e);
+        const event = await events.findOne({ name: eventName });
         if (!event) return null;
 
-        const alreadyParticipant = event.participants.some(p => p.username === username);
-        if (alreadyParticipant) return event;
+        event.participants = event.participants ?? [];
+        if (event.participants.some(p => p.username === username)) return event;
 
-        const eventUpdate = await events.updateOne(
-            { eventId: event.eventId },
+        await events.updateOne(
+            { name: eventName },
             { $push: { participants: { username, contribution: 0, willingness: 0 } } }
         );
 
-        if (eventUpdate.modifiedCount === 0) return null;
-
-        if (!user.events.includes(event.eventId)) {
+        const userEvents = user.events ?? [];
+        if (!userEvents.includes(event.eventId)) {
             await users.updateOne(
                 { username },
                 { $push: { events: event.eventId } }
             );
         }
 
-        return await events.findOne({ eventId: event.eventId });
+        return await events.findOne({ name: eventName });
     } catch (err) {
         console.error("Failed to add user to event:", err);
+        return null;
+    } finally {
+        await closeDB();
+    }
+}
+
+async function removeUserFromEvent(eventName, username) {
+    if (!eventName) return null;
+
+    const db = await connectDB();
+    try {
+        const users = db.collection(userCol);
+        const events = db.collection(eventCol);
+
+        const user = await users.findOne({ username });
+        if (!user) return null;
+
+        const event = await events.findOne({ name: eventName });
+        if (!event) return null;
+
+        await events.updateOne(
+            { name: eventName },
+            { $pull: { participants: { username } } }
+        );
+
+        const userEvents = user.events ?? [];
+        if (userEvents.includes(event.eventId)) {
+            await users.updateOne(
+                { username },
+                { $pull: { events: event.eventId } }
+            );
+        }
+
+        return await events.findOne({ name: eventName });
+    } catch (err) {
+        console.error("Failed to remove user from event:", err);
         return null;
     } finally {
         await closeDB();
