@@ -2,6 +2,25 @@ const { connectDB, closeDB } = require('./database');
 let userCol = 'users';
 
 // Helper functions
+function generateId() {
+    const letters = 'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz';
+    const digits = '0123456789';
+
+    let id = '';
+
+    // 3 random letters
+    for (let i = 0; i < 3; i++) {
+        id += letters.charAt(Math.floor(Math.random() * letters.length));
+    }
+
+    // 3 random digits
+    for (let i = 0; i < 3; i++) {
+        id += digits.charAt(Math.floor(Math.random() * digits.length));
+    }
+
+    return id;
+}
+
 function isValidEmailFormat(email) {
     const regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     return regex.test(email);
@@ -64,6 +83,7 @@ async function signIn(email, username, password) {
         if (!emailUnique || !usernameUnique) return null;
 
         const data = {
+            userId: generateId(),
             username: username,
             email: email,
             password: password,
@@ -234,7 +254,7 @@ async function deleteAccount(username, password) {
 }
 
 //User: Budget (personalised)
-async function getOverallBudget(username) {
+async function getUserOverallBudget(username) {
     const db = await connectDB(); 
     try {
         const collection = db.collection(userCol);
@@ -323,6 +343,33 @@ async function updateOverallBudget(username, newBudget) {
         await closeDB();
     }
 }
+//getAllDetails
+async function getUserDetails(username) {
+    const db = await connectDB();
+    try {
+        const collection = db.collection(userCol);
+
+        // Find the user
+        const user = await collection.findOne({ username });
+        if (!user) {
+            console.error("User does not exist");
+            return null;
+        }
+
+        // Return all user details
+        // You can filter out sensitive info like password if needed
+        const { password, ...details } = user; // exclude password
+        console.log("User details:", details);
+        return details;
+    } catch (err) {
+        console.error("Failed to get user details:", err);
+        return null;
+    } finally {
+        await closeDB();
+    }
+}
+
+
 
 // how to use
 // (async () => {
@@ -341,4 +388,7 @@ async function updateOverallBudget(username, newBudget) {
 //     updatePassword("tPerson","aBc123");
 // })()
 
-(async=>signIn("c@fnb.com","betterOffAlone","123!@#Password"))()
+// (async=>signIn("c@fnb.com","betterOffAlone","123!@#Password"))()
+// (async=>deleteAccount("betterOffAlone","123!@#Password"))()
+
+console.log(getAllDetails("betterOffAlone"))
