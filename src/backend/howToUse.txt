@@ -88,6 +88,51 @@ getEventParticipants(eventName)
   - Returns: Array of participant objects or null
   - Example: await getEventParticipants("Fundraiser");
 
+addContribution(username, eventId, amount)
+  - Parameters: string, string, number
+  - Returns: Modified count or null
+  - Example: await addContribution("john_doe", "event_123", 50)
+
+search(type, searchParams)
+  - Parameters: type (string), searchParams (string)
+  - Returns: An array of search results from the relevant handler function, or null if the type is invalid.
+  - Example: await search("user", "john")
+
+requestSubsidy(username, eventId)
+  - Parameters: username (string), eventId (string)
+  - Returns: The modifiedCount (number) indicating the number of documents updated, or null if the event or user is not found.
+  - Example: await requestSubsidy("jane_doe", "event_456")
+
+contributeToSubsidy(username, eventId, amount)
+  - Parameters: username (string), eventId (string), amount (number)
+  - Returns: The return value of the addContribution function (modified count or null).
+  - Example: await contributeToSubsidy("john_doe", "event_123", 25)
+
+updateEvent(username, eventId, updates)
+  - Parameters: username (string), eventId (string), updates (object)
+  - Returns: The modifiedCount (number) if the update is successful, or null otherwise.
+  - Example: await updateEvent("john_doe", "event_123", { newName: "Community Gathering", newBudget: 500 })
+
+deleteEvent(username, eventId)
+  - Parameters: username (string), eventId (string)
+  - Returns: The deletedCount (number) if the deletion is successful, or null otherwise.
+  - Example: await deleteEvent("jane_doe", "event_456")
+
+listUpcomingEvents(username)
+  - Parameters: username (string)
+  - Returns: An array of event documents, or an empty array if no upcoming events are found.
+  - Example: await listUpcomingEvents("john_doe")
+
+getEventSummary(username, eventId)
+  - Parameters: username (string), eventId (string)
+  - Returns: The event document or null if the event is not found or the user is not the creator.
+  - Example: await getEventSummary("john_doe", "event_123")
+
+commentOnEvent(username, eventId, message)
+  - Parameters: username (string), eventId (string), message (string)
+  - Returns: The modifiedCount (number) if the update is successful, or null if the user is not a participant.
+  - Example: await commentOnEvent("jane_doe", "event_456", "This looks like fun!")
+
 ==============================
 HELPER FUNCTIONS
 ==============================
@@ -111,6 +156,16 @@ isValidPassword(password)
   - Parameters: string
   - Returns: true / false
   - Example: isValidPassword("Abc123");
+
+handleUserSearch(text)
+  - Parameters: text (string)
+  - Returns: An array of user documents that match the search criteria, or null if an error occurs.
+  - Example: await handleUserSearch("john")
+
+handleEventSearch(text)
+  - Parameters: text (string)
+  - Returns: An array of event documents that match the search criteria, or null if an error occurs.
+  - Example: await handleEventSearch("fundraiser")
 
 ==============================
 NOTES
