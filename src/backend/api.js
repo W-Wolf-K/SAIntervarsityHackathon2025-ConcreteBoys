@@ -37,8 +37,13 @@ async function isUsernameUnique(username, db) {
     return true;
 }
 
+function verifyPassword(password, stored) {
+    const stored = password
+    return stored === storedHash;
+}
+
 // Insert user
-async function insertOneUser(email, username, password) {
+async function insertUser(email, username, password) {
     if (!isValidEmailFormat(email)) {
         console.error('Invalid email format');
         return null;
@@ -59,9 +64,9 @@ async function insertOneUser(email, username, password) {
         if (!emailUnique || !usernameUnique) return null;
 
         const data = {
-            username,
-            email,
-            password,
+            username: username,
+            email: email,
+            password: password,
             groups: [],
             events: [],
             totalSpent: 0
@@ -77,8 +82,40 @@ async function insertOneUser(email, username, password) {
         await closeDB();
     }
 }
+//log-in User
+async function loginUser(username, password) {
+    const db = await connectDB();
+    try {
+        const user = await db.collection(userCol).findOne({ username });
+        if (!user) {
+            console.error("User not found");
+            return null;
+        }
+
+        if (verifyPassword(password, user.password)) {
+            console.log("Login successful!");
+            return user;
+        } else {
+            console.error("Invalid password");
+            return null;
+        }
+    } catch (err) {
+        console.error("Login failed:", err);
+        return null;
+    } finally {
+        await closeDB();
+    }
+}
  
 // how to use
 (async () => {
-    await insertOneUser("testemail@gmail.com", "testPerson", "Abc123");
+    await insertUser("testemail@gmail.com", "testPerson", "Abc123");
+})();
+(async () => {
+    const a = await loginUser("testPerson", "Abc123"); // strings in quotes
+    if (a) {
+        console.log("Logged in:", a.username);
+    } else {
+        console.log("Login failed");
+    }
 })();
