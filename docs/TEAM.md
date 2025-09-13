@@ -12,15 +12,16 @@
 ## 👥 Members
 | Name     | Role                | Institution           | Discord Handle | Email |
 |----------|---------------------|-----------------------| -------------------|-------------|
-| **Name 1**   | Backend Developer   | University of Cape Town | name1 | <email1@gmail.com> |
-| **Name 2**   | Frontend Developer  | University of the Witwatersrand | name2 | <email2@gmail.com> |
-| **Name 3**   | Designer            | University of Johannesburg | name3 | <email3@gmail.com> |
-| **Name 4**   | Q.A Tester          | University of the Western Cape | name4 | <email4@gmail.com> |
+| **Karabo Nkomo** | Backend Developer, Q.A Tester | University of Pretoria | wise_krb | <mofarokarabo250@gmail.com> |
+| **Bandile Mnyandu** | Backend Developer, Designer  | University of Pretoria | chiicage |<bandilemnyandu12@gmail.com> |
+| **Njabulo Mathonsi** | Frontend Developer, Q.A Tester | University of Pretoria | aura_m4ge | <njabsmathonsi52@gmail.com> |
+| **Mutombo Kabau** | Frontend Developer , Designer | University of Pretoria | kabzz05 | <u24957102@tuks.co.za> |
 
 ## 🏫 Institution
 ``` c
 // TODO: Fill-in the name of the institution your
 // team is competing under.
+University of Pretoria
 ```
 
 ## 📧 Other Contact Info
