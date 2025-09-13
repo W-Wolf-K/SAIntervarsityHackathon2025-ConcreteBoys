@@ -202,6 +202,36 @@ async function updatePassword(username, newPassword) {
         await closeDB();
     }
 }
+//delete acc 
+async function deleteAccount(username, password) {
+    const db = await connectDB();
+    try {
+        const collection = db.collection(userCol);
+
+        // Find the user
+        const user = await collection.findOne({ username });
+        if (!user) {
+            console.error("User does not exist");
+            return null;
+        }
+
+        // Verify password
+        if (!verifyPassword(password, user.password)) {
+            console.error("Invalid password. Account deletion denied.");
+            return null;
+        }
+
+        // Delete user
+        const result = await collection.deleteOne({ username });
+        console.log(`Deleted ${result.deletedCount} user(s)`);
+        return result.deletedCount;
+    } catch (err) {
+        console.error("Failed to delete account:", err);
+        return null;
+    } finally {
+        await closeDB();
+    }
+}
 
 //User: Budget (personalised)
 async function getOverallBudget(username) {
@@ -310,3 +340,5 @@ async function updateOverallBudget(username, newBudget) {
 // (async () =>{
 //     updatePassword("tPerson","aBc123");
 // })()
+
+(async=>signIn("c@fnb.com","betterOffAlone","123!@#Password"))()
