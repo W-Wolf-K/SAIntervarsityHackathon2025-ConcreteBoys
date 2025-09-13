@@ -595,13 +595,4 @@ async function getEventParticipants(eventName) {
     }
 }
 
-
-// (async () => {signIn("mariadb@db.com","maria","1@mMaria")})()
-// (async () => {signIn("jack@db.com","jack","1@mJACK")})()
-
-// (async () => {
-//     await createEvent("maria", "Dinner", 269);
-// })();
-
-// (async() => addUserToEvent("Vee121","maria","jack"))()
 (async => getEventParticipants("Dinner"))()
